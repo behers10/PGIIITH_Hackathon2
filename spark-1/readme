@@ -1,1 +1,29 @@
+Create a new network and join all the images together with the network. This spark image is joined to cassandra image as they are on the same network, which is create over here.
+
+Download all the csv files to the data folder and mount it to the image. Also create a folder by names models in the same data folder to save the model
+
+
+```
+docker network create hack
+
+docker build -t sparky .
+
+docker run --name spark-node --net hack -v hackathon/data:/data -p 4040:4040 sparky
+
+```
+
+
+For prediction modify the predict.py so that it can listen from Kafka and use spark streaming
+
+Sample message is shown in the predict.py. This sample message is sent by the front-end, when you click on the predict button. Usually this sample message needs to be read from kafka pipeline.
+
+In the docker file the entry is made such that it builds the model as soon as the image is initialized.
+
+To run predict, you need to enter the container and give some parameters
+
+```
+/opt/spark/bin/spark-submit --packages com.datastax.spark:spark-cassandra-connector_2.12:2.5.2 --conf spark.cassandra.connection.host=cass src/predict.py
+```
+
+cass is the network alias of cassandra. It can be made to use environment variable from Docker compose file as well
 

@@ -1,1 +1,27 @@
 
+Docker commands
+
+```
+docker build -t cassy .
+```
+
+```
+docker run --name cassy-node --net hack --network-alias cass -v cass-data:/var/lib/cassandra -p 9042:9042 cassy
+
+```
+
+
+To check for tables updated or not
+
+```
+# Go into the container
+docker exec -it cassy-node bash
+
+# Go to the cqlsh prompt
+cqlsh
+
+# Check content in the table
+
+SELECT * FROM parking_keyspace.violation_details
+
+```
