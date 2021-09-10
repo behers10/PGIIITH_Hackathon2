@@ -92,27 +92,21 @@ df3 = df2.groupby(required_cols).count().withColumnRenamed("count", "violation_c
 # Removing the outliers and only predicting 
 df_le_30_violations = df3.filter(col("violation_count") < 30)
 df_le_30_violations.printSchema()
-# df_le_30_violations.cache()
-# print(df_le_30_violations.count())
-
-# for c in required_cols:
-#         print(f'{c}: {df3.select(col(c)).distinct().count()}')
-
-# total_count = df3.count()
-# df4 = df3.groupby("violation_count").count().withColumn("perc", col("count")/total_count)
 
 
 # df4.filter(col("violation_count") < 30).select(sum("count")/total_count).show()
 # 85 perc is less than 30
 
+(train, test) = df_le_30_violations.randomSplit([0.8, 0.2])
+
 county_indexer = StringIndexer(inputCol="Violation County", outputCol="violation_county_index")
-county_indexer_model = county_indexer.fit(df_le_30_violations)
-county_indexed = county_indexer_model.transform(df_le_30_violations)
+# county_indexer_model = county_indexer.fit(df_le_30_violations)
+# county_indexed = county_indexer_model.transform(df_le_30_violations)
 
 front_opp_indexer = StringIndexer(inputCol="Violation In Front Of Or Opposite", 
                                 outputCol="violation_in_front_opp_index")
-front_opp_indexer_model = front_opp_indexer.fit(county_indexed)
-indexed_df = front_opp_indexer_model.transform(county_indexed)
+# front_opp_indexer_model = front_opp_indexer.fit(county_indexed)
+# indexed_df = front_opp_indexer_model.transform(county_indexed)
 
 input_cols = ["Violation Code", "Violation Location", "Violation Hour", "month", "date", 
                 "violation_county_index", "violation_in_front_opp_index"]
@@ -122,19 +116,43 @@ feature_cols = [column.lower().replace(" ", "_")+"_vec" for column in input_cols
 one_hot_encoder = OneHotEncoderEstimator(inputCols=input_cols, 
                         outputCols=feature_cols)
 
-one_hot_model = one_hot_encoder.fit(indexed_df)
-encoded_df = one_hot_model.transform(indexed_df)
+# one_hot_model = one_hot_encoder.fit(indexed_df)
+# encoded_df = one_hot_model.transform(indexed_df)
 
 assembler = VectorAssembler(inputCols=feature_cols, outputCol="features")
-model_input_df = assembler.transform(encoded_df)
+# model_input_df = assembler.transform(encoded_df)
 
-model_input_df.cache()
-print(model_input_df.count())
 
-(train, test) = model_input_df.randomSplit([0.8, 0.2])
 
-evaluator = RegressionEvaluator(
-labelCol="violation_count", predictionCol="prediction", metricName="rmse")
+lr = LinearRegression(labelCol="violation_count", 
+                                featuresCol="features",
+                                maxIter=100, 
+                                regParam=0.01, 
+                                elasticNetParam=0.1)
+
+lr_pipeline = Pipeline(stages=[county_indexer, front_opp_indexer, one_hot_encoder, assembler, lr])
+lr_model = lr_pipeline.fit(df_le_30_violations)
+
+save_model_path = "/data/models/lr_model"
+lr_model.save(save_model_path)
+print(f'Model saved at: {save_model_path}')
+
+
+# evaluator = RegressionEvaluator(labelCol="violation_count", 
+#                                 predictionCol="prediction", 
+#                                 metricName="rmse")
+
+# lr_predictions = lr_model.transform(test)
+# lr_rmse = evaluator.evaluate(lr_predictions)
+
+
+# lr_model.save(save_model_path)
+# print(f'Model saved at: {save_model_path}')
+
+        
+
+
+# Below are the code to check various models
 
 def build_tree_models(model_input_df, train, test):
 
@@ -172,7 +190,7 @@ def build_lr_model(reg_param, elastic_net_param, save_model_path=None):
                                 featuresCol="features",
                                 maxIter=100, 
                                 regParam=reg_param, 
-                                elasticNetParam=0.5)
+                                elasticNetParam=elastic_net_param)
 
         lr_model = lr.fit(train)
         lr_predictions = lr_model.transform(test)
@@ -236,9 +254,9 @@ def build_glr_model(train, test):
 # rmse = build_lr_model(0.01, 0.1)
 # print('Rmse: {rmse}')
 
-model_path = "/data/lr_model"
-rmse = build_lr_model(0.01, 0.1, model_path)
-print("Rmse: {rmse}")
+# model_path = "/data/lr_model"
+# rmse = build_lr_model(0.01, 0.1, model_path)
+# print("Rmse: {rmse}")
 
-# Load model when required
-lr_model = LinearRegressionModel.load(model_path)
+# # Load model when required
+# lr_model = LinearRegressionModel.load(model_path)
