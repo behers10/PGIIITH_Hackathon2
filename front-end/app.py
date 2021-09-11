@@ -138,7 +138,7 @@ def create_app():
         feature_dict = {'month': month, 'hour': hour, 'date': date, 'hour': hour, "type": type1, "location": location, "county": county, "code": code}
         feature_json = json.dumps(feature_dict)
 
-        kafka_connector.kafka_producer.send(self.kafka_topic, bytes(feature_json, encoding="utf8"))
+        kafka_connector.kafka_producer.send(KAFKA_TOPIC, bytes(feature_json, encoding="utf8"))
 
         return feature_json
     
