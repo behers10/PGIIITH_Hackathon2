@@ -5,6 +5,8 @@ import json
 import sys
 import os
 
+KAFKA_BROKER = 'localhost:29092'
+KAFKA_TOPIC = 'parking'
 
 class KafkaConnector(object):
 
@@ -24,8 +26,8 @@ class KafkaConnector(object):
 def create_app():
     app = Flask(__name__)
 
-    kafka_connector = KafkaConnector(os.getenv("KAFKA_BROKER"), os.getenv("KAFKA_TOPIC"))
-
+    #kafka_connector = KafkaConnector(os.getenv("KAFKA_BROKER"), os.getenv("KAFKA_TOPIC"))
+    kafka_connector = KafkaConnector(KAFKA_BROKER,KAFKA_TOPIC)
     @app.route('/', methods=["GET"])
     def home():
         month_options = ""
